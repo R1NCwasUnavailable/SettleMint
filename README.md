@@ -1,73 +1,56 @@
-# React + TypeScript + Vite
+# 🌿 SettleMint
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SettleMint is an AI-powered, intelligent accountant for group trips and hangouts. Instead of manually calculating who owes whom and dealing with complex spreadsheets, simply tell SettleMint your expenses in natural language, and it will handle the rest.
 
-Currently, two official plugins are available:
+## ✨ Features
+* **Natural Language Processing:** Just type "John paid $50 for gas, but Sarah only owes $10" and SettleMint understands perfectly.
+* **Smart Context Profiles:** Store group members and their dietary or personal preferences (e.g., "Sarah is vegan"). The AI remembers this context for all future math calculations.
+* **Instant Balances:** Generate a perfect, readable markdown ledger showing exactly who owes who on demand.
+* **Modern UI:** Built with a beautiful, dark-mode glassmorphism aesthetic.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 🚀 Getting Started (For Collaborators)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+If you've been invited to collaborate on this repository, follow these steps to get the app running locally on your machine.
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Clone the repository
+```bash
+git clone https://github.com/R1NCwasUnavailable/SettleMint.git
+cd SettleMint
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 2. Install dependencies
+Ensure you have Node.js installed, then run:
+```bash
+npm install
 ```
+
+### 3. Set up your Environment Variables 🔑 (CRITICAL STEP)
+Because API keys are sensitive, our `.gitignore` file explicitly ignores `.env.local` files so they don't accidentally get pushed to GitHub. 
+
+When you cloned this repo, **the `.env.local` file was not included.** You must create your own!
+
+1. Create a new file in the root directory and name it EXACTLY `.env.local`
+2. Go to [Google AI Studio](https://aistudio.google.com/app/apikey) and generate a free Gemini API Key.
+3. Open your new `.env.local` file and add the following line:
+```env
+VITE_GEMINI_API_KEY=your_api_key_here
+```
+
+### 4. Run the Development Server
+```bash
+npm run dev
+```
+Open your browser and navigate to `http://localhost:5173`.
+
+---
+
+## 🛠️ Tech Stack
+* **Frontend Framework:** React 19 + Vite
+* **Language:** TypeScript
+* **Styling:** Vanilla CSS (Glassmorphism design system)
+* **AI Integration:** Vercel AI SDK (`@ai-sdk/google`)
+* **LLM:** Google `gemini-2.5-flash`
+* **Icons:** Lucide React
+* **Markdown:** React Markdown
