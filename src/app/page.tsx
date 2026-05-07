@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { z } from 'zod';
 import { generateObject } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { Send, Leaf, Loader2, Wallet, Receipt, Users, ArrowRight, X } from 'lucide-react';
 import { calculateBalances, Expense } from '../lib/math';
+import { supabase } from '../lib/supabase';
 import './globals.css';
 
 const google = createGoogleGenerativeAI({
@@ -19,7 +20,6 @@ const aiIntentSchema = z.object({
     preferences: z.string()
   })).optional(),
   newExpenses: z.array(z.object({
-    id: z.string(),
     description: z.string(),
     amount: z.number(),
     paidBy: z.string(),
@@ -28,16 +28,17 @@ const aiIntentSchema = z.object({
   })).optional()
 });
 
+export type Profile = {
+  id?: string;
+  name: string;
+  preferences: string;
+};
+
 type TripState = {
   profiles: Profile[];
   totalSpent: number;
   expenses: Expense[];
   balances: { personOwning: string; personOwed: string; amount: number }[];
-};
-
-export type Profile = {
-  name: string;
-  preferences: string;
 };
 
 export default function Dashboard() {
@@ -51,26 +52,63 @@ export default function Dashboard() {
   
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingDB, setIsLoadingDB] = useState(true);
   
   // Profile Form state
   const [newProfileName, setNewProfileName] = useState('');
   const [newProfilePref, setNewProfilePref] = useState('');
 
-  const handleAddProfile = () => {
+  // Initial Data Fetch
+  useEffect(() => {
+    async function fetchDatabase() {
+      const { data: profilesData } = await supabase.from('profiles').select('*');
+      const { data: expensesData } = await supabase.from('expenses').select('*').order('created_at', { ascending: true });
+
+      const profiles = profilesData || [];
+      
+      const expenses = (expensesData || []).map(exp => ({
+        id: exp.id,
+        description: exp.description,
+        amount: Number(exp.amount),
+        paidBy: exp.paid_by,
+        date: exp.date,
+        splitBetween: exp.split_between
+      }));
+
+      const totalSpent = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+      const balances = calculateBalances(expenses);
+
+      setTripState({ profiles, expenses, totalSpent, balances });
+      setIsLoadingDB(false);
+    }
+    fetchDatabase();
+  }, []);
+
+  const handleAddProfile = async () => {
     if (newProfileName.trim()) {
+      const newP = { name: newProfileName.trim(), preferences: newProfilePref.trim() };
+      
+      // Save to Supabase
+      const { data, error } = await supabase.from('profiles').insert([newP]).select();
+      if (error) {
+        alert("Failed to save profile: " + error.message);
+        return;
+      }
+
       setTripState(prev => ({
         ...prev,
-        profiles: [...prev.profiles, { name: newProfileName.trim(), preferences: newProfilePref.trim() }]
+        profiles: [...prev.profiles, data[0]]
       }));
       setNewProfileName('');
       setNewProfilePref('');
     }
   };
 
-  const handleRemoveProfile = (indexToRemove: number) => {
+  const handleRemoveProfile = async (profileName: string) => {
+    await supabase.from('profiles').delete().eq('name', profileName);
     setTripState(prev => ({
       ...prev,
-      profiles: prev.profiles.filter((_, idx) => idx !== indexToRemove)
+      profiles: prev.profiles.filter(p => p.name !== profileName)
     }));
   };
 
@@ -100,24 +138,51 @@ CURRENT PROFILES IN SYSTEM: ${tripState.profiles.map(p => `${p.name} (Preference
         prompt: `USER COMMAND:\n${command}`
       });
 
-      setTripState(prev => {
-        // 1. Merge Profiles
-        let updatedProfiles = [...prev.profiles];
-        if (object.newProfiles) {
-          object.newProfiles.forEach(newP => {
-            const existing = updatedProfiles.find(p => p.name.toLowerCase() === newP.name.toLowerCase());
-            if (existing) {
-              existing.preferences = newP.preferences;
-            } else {
-              updatedProfiles.push(newP);
-            }
-          });
+      // 1. Save new profiles to Supabase
+      let addedProfiles: Profile[] = [];
+      if (object.newProfiles && object.newProfiles.length > 0) {
+        const { data, error } = await supabase.from('profiles').upsert(
+          object.newProfiles, 
+          { onConflict: 'name' }
+        ).select();
+        if (data) addedProfiles = data;
+      }
+
+      // 2. Save new expenses to Supabase
+      let addedExpenses: Expense[] = [];
+      if (object.newExpenses && object.newExpenses.length > 0) {
+        const formattedExpenses = object.newExpenses.map(exp => ({
+          description: exp.description,
+          amount: exp.amount,
+          paid_by: exp.paidBy,
+          date: exp.date,
+          split_between: exp.splitBetween
+        }));
+        
+        const { data, error } = await supabase.from('expenses').insert(formattedExpenses).select();
+        
+        if (data) {
+          addedExpenses = data.map(exp => ({
+            id: exp.id,
+            description: exp.description,
+            amount: Number(exp.amount),
+            paidBy: exp.paid_by,
+            date: exp.date,
+            splitBetween: exp.split_between
+          }));
         }
+      }
 
-        // 2. Merge Expenses
-        const updatedExpenses = [...prev.expenses, ...(object.newExpenses || [])];
+      // 3. Update React State
+      setTripState(prev => {
+        let updatedProfiles = [...prev.profiles];
+        addedProfiles.forEach(newP => {
+          const index = updatedProfiles.findIndex(p => p.name.toLowerCase() === newP.name.toLowerCase());
+          if (index >= 0) updatedProfiles[index] = newP;
+          else updatedProfiles.push(newP);
+        });
 
-        // 3. Deterministic Math!
+        const updatedExpenses = [...prev.expenses, ...addedExpenses];
         const newTotal = updatedExpenses.reduce((sum, exp) => sum + exp.amount, 0);
         const newBalances = calculateBalances(updatedExpenses);
 
@@ -128,6 +193,7 @@ CURRENT PROFILES IN SYSTEM: ${tripState.profiles.map(p => `${p.name} (Preference
           balances: newBalances
         };
       });
+
     } catch (error) {
       console.error(error);
       alert("Oops, the AI failed to process that expense. Make sure your API key is valid and you didn't exceed quotas.");
@@ -139,6 +205,14 @@ CURRENT PROFILES IN SYSTEM: ${tripState.profiles.map(p => `${p.name} (Preference
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') handleMagicSubmit();
   };
+
+  if (isLoadingDB) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', color: 'var(--mint-primary)' }}>
+        <Loader2 size={48} className="animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -180,7 +254,7 @@ CURRENT PROFILES IN SYSTEM: ${tripState.profiles.map(p => `${p.name} (Preference
                     <strong style={{color: 'white'}}>{p.name}</strong>
                     {p.preferences && <div style={{fontSize: 12, color: 'var(--text-secondary)'}}>{p.preferences}</div>}
                   </div>
-                  <button className="remove-btn" onClick={() => handleRemoveProfile(i)}><X size={16} /></button>
+                  <button className="remove-btn" onClick={() => handleRemoveProfile(p.name)}><X size={16} /></button>
                 </div>
               ))
             )}
