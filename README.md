@@ -4,7 +4,9 @@ SettleMint is a production-grade, AI-powered financial dashboard designed to com
 
 Instead of manually crunching numbers or wrestling with complex spreadsheets, SettleMint allows you to simply type what happened in natural language (e.g., *"Rahul paid ₹1000 for dinner, but Priya is vegan and didn't eat the meat"*). The AI instantly parses your intent, applies strict dietary exclusions, and uses a deterministic minimum-cash-flow algorithm to calculate the perfect settlement balances.
 
-![SettleMint Dashboard](./public/demo.png) *(Dashboard features a modern, premium "Bento Box" glassmorphic UI)*
+![SettleMint Dashboard](./public/demo.png) *(Dashboard Empty State)*
+<br>
+![SettleMint Dashboard in Action](./public/demo2.png) *(The deterministic math engine perfectly calculating debts based on NLP input!)*
 
 ## 🚀 Key Features
 
