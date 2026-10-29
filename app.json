@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "name": "SettleMint",
+    "slug": "settlemint",
+    "version": "1.0.0",
+    "scheme": "settlemint",
+    "userInterfaceStyle": "dark",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-asset"
+    ]
+  }
+}

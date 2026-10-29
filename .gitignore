@@ -1,0 +1,27 @@
+node_modules/
+.expo/
+dist/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.orig.*
+web-build/
+
+# Environment variables (keep .env.example, ignore real secrets)
+.env
+.env.*
+!.env.example
+.env.local
+.env.production
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
